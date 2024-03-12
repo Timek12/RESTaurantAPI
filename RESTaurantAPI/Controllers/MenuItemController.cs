@@ -25,5 +25,28 @@ namespace RESTaurantAPI.Controllers
             _response.StatusCode = HttpStatusCode.OK;
             return Ok(_response);
         }
+
+        [HttpGet("{id:int}")]
+        public async Task<IActionResult> GetMenuItem(int id)
+        {
+            if(id == 0)
+            {
+                _response.StatusCode = HttpStatusCode.BadRequest;
+                _response.IsSuccess = false;
+                return BadRequest(_response);
+            }
+
+            MenuItem menuItem = _db.MenuItems.FirstOrDefault(u => u.Id == id);
+            if(menuItem is null)
+            {
+                _response.StatusCode = HttpStatusCode.NotFound;
+                _response.IsSuccess = false;
+                return NotFound(_response);
+            }
+
+            _response.Result = menuItem;
+            _response.StatusCode = HttpStatusCode.OK;
+            return Ok(_response);
+        }
     }
 }
