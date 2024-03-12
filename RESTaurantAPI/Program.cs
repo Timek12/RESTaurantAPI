@@ -1,7 +1,9 @@
+using Azure.Storage.Blobs;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using RESTaurantAPI.Data;
 using RESTaurantAPI.Models;
+using RESTaurantAPI.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,6 +12,10 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultDbConnection"));
 });
+builder.Services.AddSingleton(u => new BlobServiceClient
+    (builder.Configuration.GetConnectionString("StorageAccountConnectionString")));
+builder.Services.AddSingleton<IBlobService, BlobService>();
+
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>().AddEntityFrameworkStores<ApplicationDbContext>();
 
 builder.Services.AddControllers();
