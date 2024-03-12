@@ -31,10 +31,10 @@ namespace RESTaurantAPI.Controllers
             return Ok(_response);
         }
 
-        [HttpGet("{id:int}", Name= "GetMenuItem")]
+        [HttpGet("{id:int}", Name = "GetMenuItem")]
         public async Task<IActionResult> GetMenuItem(int id)
         {
-            if(id == 0)
+            if (id == 0)
             {
                 _response.StatusCode = HttpStatusCode.BadRequest;
                 _response.IsSuccess = false;
@@ -42,7 +42,7 @@ namespace RESTaurantAPI.Controllers
             }
 
             MenuItem menuItem = _db.MenuItems.FirstOrDefault(u => u.Id == id);
-            if(menuItem is null)
+            if (menuItem is null)
             {
                 _response.StatusCode = HttpStatusCode.NotFound;
                 _response.IsSuccess = false;
@@ -59,9 +59,9 @@ namespace RESTaurantAPI.Controllers
         {
             try
             {
-                if(ModelState.IsValid)
+                if (ModelState.IsValid)
                 {
-                    if(menuItemCreateDTO.File is null || menuItemCreateDTO.File.Length <= 0)
+                    if (menuItemCreateDTO.File is null || menuItemCreateDTO.File.Length <= 0)
                     {
                         _response.StatusCode = HttpStatusCode.BadRequest;
                         _response.IsSuccess = false;
@@ -81,6 +81,7 @@ namespace RESTaurantAPI.Controllers
                         Description = menuItemCreateDTO.Description,
                         Image = await _blobService.UploadBlob(fileName, SD.SD_Storage_Container, menuItemCreateDTO.File)
                     };
+
                     _db.MenuItems.Add(menuItemToCreate);
                     await _db.SaveChangesAsync();
                     _response.Result = menuItemToCreate;
@@ -92,15 +93,119 @@ namespace RESTaurantAPI.Controllers
                     _response.StatusCode = HttpStatusCode.BadRequest;
                     _response.IsSuccess = false;
                     return BadRequest(_response);
-                }   
+                }
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 _response.IsSuccess = false;
                 _response.Errors.Add(e.ToString());
             }
 
             return _response;
-        }   
+        }
+
+        [HttpPut("{id:int}")]
+        public async Task<ActionResult<ApiResponse>> UpdateMenuItem(int id, [FromForm] MenuItemUpdateDTO menuItemUpdateDTO)
+        {
+            try
+            {
+                if (ModelState.IsValid)
+                {
+                    if (menuItemUpdateDTO is null || menuItemUpdateDTO.Id != id)
+                    {
+                        _response.StatusCode = HttpStatusCode.BadRequest;
+                        _response.IsSuccess = false;
+                        return BadRequest(_response);
+                    }
+
+                    MenuItem? menuItemFromDb = await _db.MenuItems.FindAsync(id);
+                    if (menuItemFromDb is null)
+                    {
+                        _response.StatusCode = HttpStatusCode.NotFound;
+                        _response.IsSuccess = false;
+                        return NotFound(_response);
+                    }
+
+                    menuItemFromDb.Name = menuItemUpdateDTO.Name;
+                    menuItemFromDb.Price = menuItemUpdateDTO.Price;
+                    menuItemFromDb.Category = menuItemUpdateDTO.Category;
+                    menuItemFromDb.SpecialTag = menuItemUpdateDTO.SpecialTag;
+                    menuItemFromDb.Description = menuItemUpdateDTO.Description;
+
+                    if(menuItemUpdateDTO.File is not null && menuItemUpdateDTO.File.Length > 0)
+                    {
+                        await _blobService.DeleteBlob(menuItemFromDb.Image.Split('/').Last(), SD.SD_Storage_Container);
+                        string fileName = $"{Guid.NewGuid()}{Path.GetExtension(menuItemUpdateDTO.File.FileName)}";
+                        menuItemFromDb.Image = await _blobService.UploadBlob(fileName, SD.SD_Storage_Container, menuItemUpdateDTO.File);
+                    }
+
+                    _db.MenuItems.Update(menuItemFromDb);
+                    await _db.SaveChangesAsync();
+                    _response.StatusCode = HttpStatusCode.NoContent;
+                    return Ok(_response);
+                }
+                else
+                {
+                    _response.StatusCode = HttpStatusCode.BadRequest;
+                    _response.IsSuccess = false;
+                    return BadRequest(_response);
+                }
+            }
+            catch (Exception e)
+            {
+                _response.IsSuccess = false;
+                _response.Errors.Add(e.ToString());
+            }
+
+            return _response;
+        }
+
+        [HttpDelete("{id:int}")]
+        public async Task<ActionResult<ApiResponse>> DeleteMenuItem(int id)
+        {
+            try
+            {
+                if (ModelState.IsValid)
+                {
+                    if (id == 0)
+                    {
+                        _response.StatusCode = HttpStatusCode.BadRequest;
+                        _response.IsSuccess = false;
+                        return BadRequest(_response);
+                    }
+
+                    MenuItem? menuItemFromDb = await _db.MenuItems.FindAsync(id);
+                    if (menuItemFromDb is null)
+                    {
+                        _response.StatusCode = HttpStatusCode.NotFound;
+                        _response.IsSuccess = false;
+                        return NotFound(_response);
+                    }
+
+                    await _blobService.DeleteBlob(menuItemFromDb.Image.Split('/').Last(), SD.SD_Storage_Container);
+
+                    int miliseconds = 2000;
+                    Thread.Sleep(miliseconds);
+
+                    _db.MenuItems.Remove(menuItemFromDb);
+                    await _db.SaveChangesAsync();
+                    _response.StatusCode = HttpStatusCode.NoContent;
+                    return Ok(_response);
+                }
+                else
+                {
+                    _response.StatusCode = HttpStatusCode.BadRequest;
+                    _response.IsSuccess = false;
+                    return BadRequest(_response);
+                }
+            }
+            catch (Exception e)
+            {
+                _response.IsSuccess = false;
+                _response.Errors.Add(e.ToString());
+            }
+
+            return _response;
+        }
     }
 }
