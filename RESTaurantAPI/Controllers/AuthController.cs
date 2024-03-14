@@ -1,12 +1,16 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 using RESTaurantAPI.Data;
 using RESTaurantAPI.Models;
 using RESTaurantAPI.Models.Dto;
 using RESTaurantAPI.Services;
 using RESTaurantAPI.Utility;
+using System.IdentityModel.Tokens.Jwt;
 using System.Net;
+using System.Text;
+using System.Security.Claims;
 
 namespace RESTaurantAPI.Controllers
 {
@@ -108,12 +112,29 @@ namespace RESTaurantAPI.Controllers
                 return BadRequest(_response);
             }
 
-            // here we have to generate new JWT 
+            JwtSecurityTokenHandler tokenhandler = new();
+            byte[] key = Encoding.ASCII.GetBytes(secretKey);
+            var userRoles = await _userManager.GetRolesAsync(userFromDb);
+            SecurityTokenDescriptor tokenDescriptor = new()
+            {
+                Subject = new ClaimsIdentity(new Claim[]
+                {
+                    new Claim("fullName", userFromDb.Name),
+                    new Claim("id", userFromDb.Id.ToString()),
+                    new Claim(ClaimTypes.Email, userFromDb.Email.ToString()),
+                    new Claim(ClaimTypes.Role, userRoles.FirstOrDefault()),
+                }),
+                Expires = DateTime.UtcNow.AddDays(7),
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature) 
+            };
+
+            SecurityToken token = tokenhandler.CreateToken(tokenDescriptor);
+
 
             LoginResponseDTO loginResponse = new LoginResponseDTO()
             {
                 Email = userFromDb.Email,
-                Token = "NOT ACTUAL JWT TOKEN",
+                Token = tokenhandler.WriteToken(token), 
             };
 
             if(string.IsNullOrEmpty(loginResponse.Token))
@@ -125,7 +146,7 @@ namespace RESTaurantAPI.Controllers
                 return BadRequest(_response);
             }
 
-            _response.Result = new LoginResponseDTO();
+            _response.Result = loginResponse;
             _response.StatusCode = HttpStatusCode.OK;
             _response.IsSuccess = true;
             return Ok(_response);
