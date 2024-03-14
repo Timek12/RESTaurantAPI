@@ -83,5 +83,53 @@ namespace RESTaurantAPI.Controllers
 
             return BadRequest(_response);
         }
+
+
+        [HttpPost("login")]
+        public async Task<IActionResult> Login([FromBody] LoginRequestDTO model)
+        {
+            ApplicationUser? userFromDb = _db.ApplicationUsers.FirstOrDefault(u => u.UserName.ToLower() == model.UserName.ToLower());
+            if(userFromDb is null || userFromDb.Email is null)
+            {
+                _response.Result = new LoginResponseDTO();
+                _response.StatusCode=HttpStatusCode.BadRequest;
+                _response.IsSuccess = false;
+                _response.Errors.Add("Username or password is incorrect.");
+                return BadRequest(_response);
+            }
+
+            bool isValidPassword = await _userManager.CheckPasswordAsync(userFromDb, model.Password);
+            if(isValidPassword is false)
+            {
+                _response.Result = new LoginResponseDTO();
+                _response.StatusCode = HttpStatusCode.BadRequest;
+                _response.IsSuccess = false;
+                _response.Errors.Add("Username or password is incorrect.");
+                return BadRequest(_response);
+            }
+
+            // here we have to generate new JWT 
+
+            LoginResponseDTO loginResponse = new LoginResponseDTO()
+            {
+                Email = userFromDb.Email,
+                Token = "NOT ACTUAL JWT TOKEN",
+            };
+
+            if(string.IsNullOrEmpty(loginResponse.Token))
+            {
+                _response.Result = new LoginResponseDTO();
+                _response.StatusCode = HttpStatusCode.BadRequest;
+                _response.IsSuccess = false;
+                _response.Errors.Add("Username or password is incorrect.");
+                return BadRequest(_response);
+            }
+
+            _response.Result = new LoginResponseDTO();
+            _response.StatusCode = HttpStatusCode.OK;
+            _response.IsSuccess = true;
+            return Ok(_response);
+        }
     }
+
 }
