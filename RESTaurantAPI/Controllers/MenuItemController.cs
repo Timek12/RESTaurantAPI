@@ -79,7 +79,7 @@ namespace RESTaurantAPI.Controllers
                         Category = menuItemCreateDTO.Category,
                         SpecialTag = menuItemCreateDTO.SpecialTag,
                         Description = menuItemCreateDTO.Description,
-                        Image = await _blobService.UploadBlob(fileName, SD.SD_Storage_Container, menuItemCreateDTO.File)
+                        Image = await _blobService.UploadBlob(fileName, SD.Storage_Container, menuItemCreateDTO.File)
                     };
 
                     _db.MenuItems.Add(menuItemToCreate);
@@ -134,9 +134,9 @@ namespace RESTaurantAPI.Controllers
 
                     if(menuItemUpdateDTO.File is not null && menuItemUpdateDTO.File.Length > 0)
                     {
-                        await _blobService.DeleteBlob(menuItemFromDb.Image.Split('/').Last(), SD.SD_Storage_Container);
+                        await _blobService.DeleteBlob(menuItemFromDb.Image.Split('/').Last(), SD.Storage_Container);
                         string fileName = $"{Guid.NewGuid()}{Path.GetExtension(menuItemUpdateDTO.File.FileName)}";
-                        menuItemFromDb.Image = await _blobService.UploadBlob(fileName, SD.SD_Storage_Container, menuItemUpdateDTO.File);
+                        menuItemFromDb.Image = await _blobService.UploadBlob(fileName, SD.Storage_Container, menuItemUpdateDTO.File);
                     }
 
                     _db.MenuItems.Update(menuItemFromDb);
@@ -182,7 +182,7 @@ namespace RESTaurantAPI.Controllers
                         return NotFound(_response);
                     }
 
-                    await _blobService.DeleteBlob(menuItemFromDb.Image.Split('/').Last(), SD.SD_Storage_Container);
+                    await _blobService.DeleteBlob(menuItemFromDb.Image.Split('/').Last(), SD.Storage_Container);
 
                     int miliseconds = 2000;
                     Thread.Sleep(miliseconds);
