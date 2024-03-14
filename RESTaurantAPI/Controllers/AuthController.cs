@@ -57,19 +57,19 @@ namespace RESTaurantAPI.Controllers
                 var result = await _userManager.CreateAsync(user, model.Password);
                 if (result.Succeeded)
                 {
-                    if (!_roleManager.RoleExistsAsync(SD.SD_Role_Admin).GetAwaiter().GetResult())
+                    if (!_roleManager.RoleExistsAsync(SD.Role_Admin).GetAwaiter().GetResult())
                     {
-                        await _roleManager.CreateAsync(new IdentityRole(SD.SD_Role_Admin));
-                        await _roleManager.CreateAsync(new IdentityRole(SD.SD_Role_Customer));
+                        await _roleManager.CreateAsync(new IdentityRole(SD.Role_Admin));
+                        await _roleManager.CreateAsync(new IdentityRole(SD.Role_Customer));
                     }
 
-                    if (model.Role.ToLower() == SD.SD_Role_Admin.ToLower())
+                    if (model.Role.ToLower() == SD.Role_Admin.ToLower())
                     {
-                        await _userManager.AddToRoleAsync(user, SD.SD_Role_Admin);
+                        await _userManager.AddToRoleAsync(user, SD.Role_Admin);
                     }
                     else
                     {
-                        await _userManager.AddToRoleAsync(user, SD.SD_Role_Customer);
+                        await _userManager.AddToRoleAsync(user, SD.Role_Customer);
                     }
 
                     _response.StatusCode = HttpStatusCode.OK;
