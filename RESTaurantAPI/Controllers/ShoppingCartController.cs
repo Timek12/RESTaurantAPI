@@ -20,10 +20,57 @@ namespace RESTaurantAPI.Controllers
             _db = db;
         }
 
+        [HttpGet]
+        public async Task<ActionResult<ApiResponse>> GetShoppingCart(string userId)
+        {
+            try
+            {
+                if(string.IsNullOrEmpty(userId))
+                {
+                    _response.IsSuccess = false;
+                    _response.StatusCode = HttpStatusCode.BadRequest;
+                    return BadRequest(_response);
+                }
+
+                ShoppingCart? shoppingCart = await _db.ShoppingCarts
+                    .Include(u => u.CartItems)
+                    .ThenInclude(u => u.MenuItem)
+                    .FirstOrDefaultAsync(u => u.UserId == userId);
+
+                if (shoppingCart is null)
+                {
+                    _response.IsSuccess = false;
+                    _response.StatusCode = HttpStatusCode.BadRequest;
+                    return BadRequest(_response);
+                }
+
+                if(shoppingCart.CartItems is not null && shoppingCart.CartItems.Count > 0)
+                {
+                    shoppingCart.CartTotal = shoppingCart.CartItems.Sum(u => u.Quantity * u.MenuItem.Price);
+                }
+
+                _response.Result = shoppingCart;
+                _response.StatusCode = HttpStatusCode.OK;
+
+                return Ok(shoppingCart);
+            }
+            catch (Exception ex)
+            {
+                _response.StatusCode = HttpStatusCode.BadRequest;
+                _response.IsSuccess = false;
+                _response.Errors.Add(ex.Message);
+            }
+
+            return _response;
+        }
+
         [HttpPost]
         public async Task<ActionResult<ApiResponse>> AddOrUpdateItemInCart(string userId, int menuItemId, int updateQuantityBy)
         {
-            ShoppingCart? shoppingCart = _db.ShoppingCarts.Include(u => u.CartItems).FirstOrDefault(u => u.UserId == userId);
+            ShoppingCart? shoppingCart = _db.ShoppingCarts
+                .Include(u => u.CartItems)
+                .FirstOrDefault(u => u.UserId == userId);
+
             MenuItem? menuItem = _db.MenuItems.FirstOrDefault(u => u.Id == menuItemId);
 
             if (menuItem is null)
@@ -58,7 +105,9 @@ namespace RESTaurantAPI.Controllers
             else
             {
                 // shopping cart exists, only add cart item
-                CartItem cartItemInCart = shoppingCart.CartItems.FirstOrDefault(u => u.MenuItemId == menuItemId);
+                CartItem? cartItemInCart = shoppingCart.CartItems
+                    .FirstOrDefault(u => u.MenuItemId == menuItemId);
+
                 if (cartItemInCart is null)
                 {
                     // item does not exists in current cart
