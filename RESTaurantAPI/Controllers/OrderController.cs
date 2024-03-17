@@ -139,5 +139,55 @@ namespace RESTaurantAPI.Controllers
 
             return _response;
         }
+
+        [HttpPut("{id:int}")]
+        public async Task<ActionResult<ApiResponse>> UpdateOrderHeader(int id, [FromBody] OrderHeaderUpdateDTO orderHeaderUpdateDTO)
+        {
+            try
+            {
+                if(orderHeaderUpdateDTO is null || id != orderHeaderUpdateDTO.OrderHeaderId)
+                {
+                    _response.IsSuccess = false;
+                    _response.StatusCode = HttpStatusCode.BadRequest;
+                    return BadRequest(_response);
+                }
+
+                OrderHeader orderFromDb = _db.OrderHeaders.FirstOrDefault(u => u.OrderHeaderId == id);
+                if(orderFromDb is null)
+                {
+                    _response.IsSuccess = false;
+                    _response.StatusCode = HttpStatusCode.BadRequest;
+                    return BadRequest(_response);
+                }
+
+                if(!string.IsNullOrEmpty(orderHeaderUpdateDTO.PickupName)) {
+                    orderFromDb.PickupName = orderHeaderUpdateDTO.PickupName;
+                }
+                if (!string.IsNullOrEmpty(orderHeaderUpdateDTO.PickupPhoneNumber)) {
+                    orderFromDb.PickupPhoneNumber = orderHeaderUpdateDTO.PickupPhoneNumber;
+                }
+                if (!string.IsNullOrEmpty(orderHeaderUpdateDTO.PickupEmail)) {
+                    orderFromDb.PickupEmail = orderHeaderUpdateDTO.PickupEmail;
+                }
+                if (!string.IsNullOrEmpty(orderHeaderUpdateDTO.Status)) {
+                    orderFromDb.Status = orderHeaderUpdateDTO.Status;
+                }
+                if (!string.IsNullOrEmpty(orderHeaderUpdateDTO.StripePaymentIntentID)) {
+                    orderFromDb.StripePaymentIntentID = orderHeaderUpdateDTO.StripePaymentIntentID;
+                }
+
+                await _db.SaveChangesAsync();
+                _response.StatusCode = HttpStatusCode.NoContent;
+                return Ok(_response);
+            }
+            catch (Exception ex)
+            {
+                _response.IsSuccess = false;
+                _response.StatusCode = HttpStatusCode.BadRequest;
+                _response.Errors.Add(ex.Message.ToString());
+            }
+
+            return _response;
+        }
     }
 }
