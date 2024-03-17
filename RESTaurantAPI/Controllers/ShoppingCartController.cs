@@ -25,34 +25,35 @@ namespace RESTaurantAPI.Controllers
         {
             try
             {
-                if(string.IsNullOrEmpty(userId))
+                ShoppingCart shoppingCart;
+                if (string.IsNullOrEmpty(userId))
                 {
-                    _response.IsSuccess = false;
-                    _response.StatusCode = HttpStatusCode.BadRequest;
-                    return BadRequest(_response);
+                    shoppingCart = new();
                 }
-
-                ShoppingCart? shoppingCart = await _db.ShoppingCarts
+                else
+                {
+                    shoppingCart = await _db.ShoppingCarts
                     .Include(u => u.CartItems)
                     .ThenInclude(u => u.MenuItem)
                     .FirstOrDefaultAsync(u => u.UserId == userId);
 
-                if (shoppingCart is null)
-                {
-                    _response.IsSuccess = false;
-                    _response.StatusCode = HttpStatusCode.BadRequest;
-                    return BadRequest(_response);
+                    if (shoppingCart is null)
+                    {
+                        _response.IsSuccess = false;
+                        _response.StatusCode = HttpStatusCode.BadRequest;
+                        return BadRequest(_response);
+                    }
                 }
 
-                if(shoppingCart.CartItems is not null && shoppingCart.CartItems.Count > 0)
+                if (shoppingCart.CartItems is not null && shoppingCart.CartItems.Count > 0)
                 {
                     shoppingCart.CartTotal = shoppingCart.CartItems.Sum(u => u.Quantity * u.MenuItem.Price);
                 }
 
                 _response.Result = shoppingCart;
                 _response.StatusCode = HttpStatusCode.OK;
-
                 return Ok(shoppingCart);
+
             }
             catch (Exception ex)
             {
